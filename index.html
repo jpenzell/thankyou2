@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You Peter</title>
+    <style>
+        :root {
+            --ms-blue: #0078d4;
+            --ms-dark-blue: #005a9e;
+            --ms-green: #107c10;
+            --ms-red: #d83b01;
+            --ms-yellow: #ffb900;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f3f2f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .card {
+            width: 100%;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+        .card-header {
+            background-color: var(--ms-blue);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        .ms-logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 30px;
+            height: 30px;
+        }
+        h1 {
+            margin: 0 0 5px 0;
+            font-size: 28px;
+        }
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .message {
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        
+        @media (max-width: 600px) {
+            .card-header {
+                padding: 15px 10px;
+            }
+            h1 {
+                font-size: 22px;
+                margin-left: 25px;
+            }
+            .subtitle {
+                font-size: 14px;
+            }
+            .ms-logo {
+                width: 22px;
+                height: 22px;
+                top: 18px;
+                left: 10px;
+            }
+            .card-body {
+                padding: 15px 10px;
+            }
+            .message {
+                font-size: 14px;
+            }
+            .game-instructions {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+
+        /* Memory game styles */
+        .memory-game {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .memory-card {
+            position: relative;
+            height: 120px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        
+        .memory-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .memory-card.flipped .memory-card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .memory-card-front, .memory-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .memory-card-front {
+            background-color: var(--ms-blue);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .memory-card-back {
+            background-color: white;
+            color: #333;
+            transform: rotateY(180deg);
+            border: 2px solid var(--ms-blue);
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .start-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 30px;
+            background-color: var(--ms-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .start-btn:hover {
+            background-color: var(--ms-dark-blue);
+        }
+        
+        .game-instructions {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--ms-blue);
+        }
+        
+        .icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        
+        .matched .memory-card-back {
+            background-color: var(--ms-green) !important;
+            color: white !important;
+        }
+        
+        /* Ensure we still have the original match-found class for backwards compatibility */
+        .match-found {
+            background-color: var(--ms-green) !important;
+            color: white !important;
+        }
+        
+        .success-message {
+            display: none;
+            background-color: #e6f7ff;
+            border: 2px solid var(--ms-blue);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .signature {
+            text-align: right;
+            font-style: italic;
+            margin-top: 20px;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: var(--ms-blue);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @media (max-width: 600px) {
+            .memory-game {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .memory-card {
+                height: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="card-header">
+            <svg class="ms-logo" viewBox="0 0 23 23">
+                <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
+                <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
+                <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
+                <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+            </svg>
+            <h1>Thank You, Peter!</h1>
+            <div class="subtitle">Microsoft Nonprofit Memory Match</div>
+        </div>
+        
+        <div class="card-body">
+            <div class="message">
+                <p>Dear Peter,</p>
+                <p>Thanks for the awesome conversation! Your passion for helping nonprofits succeed with technology was truly inspiring. I created this simple memory matching game as a fun way to say thank you and to show how excited I am about the possibility of working together!</p>
+                <p style="margin-top: 15px; padding: 10px; background-color: #f0f8ff; border-left: 4px solid var(--ms-blue); border-radius: 4px; word-break: break-all; overflow-wrap: break-word;">
+                    <strong>Want to see my approach to AI?</strong> I've created an AI Assistant that showcases my thinking, resources, and approach to artificial intelligence.<br>
+                    <span style="display:inline-block; margin-top:5px; background-color: var(--ms-blue); color: white; padding: 8px 15px; border-radius: 4px; font-size: 13px; overflow-wrap: break-word; word-break: break-all;">
+                        Copy this link: <span style="font-weight:bold;">https://chatgpt.com/g/g-67452eabcfb88191b4cfe2337c45dc21-joshp-gpt</span>
+                    </span>
+                </p>
+            </div>
+            
+            <div class="game-instructions">
+                <p><strong>How to play:</strong> Click on the cards to flip them over and find matching pairs. Match all the cards to win!</p>
+            </div>
+            
+            <button class="start-btn" id="start-btn">Start Game</button>
+            
+            <div class="memory-game" id="memory-game">
+                <!-- Cards will be added here by JavaScript -->
+            </div>
+            
+            <div class="success-message" id="success-message">
+                <h3>Thanks for Playing!</h3>
+                <p>I really enjoyed chatting about Microsoft's mission to empower nonprofits. Your passion for this work is truly inspiring!</p>
+                <p>The way you described using technology to help organizations make a bigger impact in their communities resonated with me deeply.</p>
+                <p>I hope we get the chance to work together - I'd love to be part of the team making such important work happen!</p>
+            </div>
+            
+            <div class="signature">
+                <p>Sincerely,<br>Josh Penzell<br>347-598-2143 | josh@joshpenzell.com</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game elements
+        const memoryGame = document.getElementById('memory-game');
+        const startBtn = document.getElementById('start-btn');
+        const successMessage = document.getElementById('success-message');
+        
+        // Game state
+        let hasFlippedCard = false;
+        let lockBoard = false;
+        let firstCard, secondCard;
+        let matches = 0;
+        let totalPairs = 6;
+        
+        // Card content
+        const cardContent = [
+            { icon: '🤖', text: 'AI & Copilot help nonprofits automate tasks' },
+            { icon: '☁️', text: 'Azure provides secure solutions for nonprofits' },
+            { icon: '📊', text: 'Microsoft 365 improves nonprofit productivity' },
+            { icon: '🔒', text: 'Security protects nonprofit sensitive data' },
+            { icon: '🌐', text: 'Technology enables global nonprofit impact' },
+            { icon: '🎓', text: 'Training ensures tech success for nonprofits' }
+        ];
+        
+        // Initialize the game
+        function initGame() {
+            startBtn.addEventListener('click', startGame);
+        }
+        
+        // Start the game
+        function startGame() {
+            // Reset game state
+            hasFlippedCard = false;
+            lockBoard = false;
+            firstCard = null;
+            secondCard = null;
+            matches = 0;
+            
+            // Clear previous game
+            memoryGame.innerHTML = '';
+            successMessage.style.display = 'none';
+            
+            // Hide start button
+            startBtn.style.display = 'none';
+            
+            // Create the cards
+            createCards();
+        }
+        
+        // Create the cards
+        function createCards() {
+            // Double the cards to create pairs
+            const cards = [...cardContent, ...cardContent];
+            
+            // Shuffle the cards
+            shuffleArray(cards);
+            
+            // Create a card for each item
+            cards.forEach((item, index) => {
+                createCard(item, index);
+            });
+        }
+        
+        // Create a single card
+        function createCard(item, index) {
+            const card = document.createElement('div');
+            card.className = 'memory-card';
+            card.dataset.framework = item.icon;
+            
+            card.innerHTML = `
+                <div class="memory-card-inner">
+                    <div class="memory-card-front">
+                        <div>?</div>
+                    </div>
+                    <div class="memory-card-back">
+                        <div class="icon">${item.icon}</div>
+                        <div>${item.text}</div>
+                    </div>
+                </div>
+            `;
+            
+            card.addEventListener('click', flipCard);
+            memoryGame.appendChild(card);
+        }
+        
+        // Flip a card
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+            
+            this.classList.add('flipped');
+            
+            if (!hasFlippedCard) {
+                // First card flipped
+                hasFlippedCard = true;
+                firstCard = this;
+                return;
+            }
+            
+            // Second card flipped
+            secondCard = this;
+            checkForMatch();
+        }
+        
+        // Check if the two cards match
+        function checkForMatch() {
+            const isMatch = firstCard.dataset.framework === secondCard.dataset.framework;
+            
+            if (isMatch) {
+                disableCards();
+                matches++;
+                
+                // Check if all pairs are matched
+                if (matches === totalPairs) {
+                    setTimeout(() => {
+                        gameComplete();
+                    }, 1000);
+                }
+            } else {
+                unflipCards();
+            }
+        }
+        
+        // Disable matched cards - completely rewritten to fix querySelector error
+        function disableCards() {
+            // Remove event listeners first
+            if (firstCard) {
+                firstCard.removeEventListener('click', flipCard);
+            }
+            if (secondCard) {
+                secondCard.removeEventListener('click', flipCard);
+            }
+            
+            // Find the back elements directly by class name rather than querySelector
+            setTimeout(() => {
+                try {
+                    // Add a class to the cards themselves instead of trying to find child elements
+                    if (firstCard) {
+                        firstCard.classList.add('matched');
+                    }
+                    if (secondCard) {
+                        secondCard.classList.add('matched');
+                    }
+                } catch (e) {
+                    console.log('Match styling error:', e);
+                }
+                
+                resetBoard();
+            }, 500);
+        }
+        
+        // Unflip non-matching cards
+        function unflipCards() {
+            lockBoard = true;
+            
+            setTimeout(() => {
+                firstCard.classList.remove('flipped');
+                secondCard.classList.remove('flipped');
+                
+                resetBoard();
+            }, 1000);
+        }
+        
+        // Reset the board
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+        }
+        
+        // Game complete
+        function gameComplete() {
+            successMessage.style.display = 'block';
+            startBtn.textContent = 'Play Again';
+            startBtn.style.display = 'block';
+            
+            // Celebration effect
+            createConfetti();
+        }
+        
+        // Create confetti celebration
+        function createConfetti() {
+            const colors = ['#0078d4', '#107c10', '#d83b01', '#ffb900'];
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = '-20px';
+                confetti.style.opacity = 1;
+                
+                document.body.appendChild(confetti);
+                
+                // Animate confetti
+                const duration = Math.random() * 3 + 2;
+                const delay = Math.random() * 2;
+                
+                confetti.style.transition = `top ${duration}s ease-out ${delay}s, left ${duration}s ease-out ${delay}s, opacity ${duration/2}s ease-in ${duration/2 + delay}s`;
+                confetti.style.top = '100vh';
+                confetti.style.left = `${Math.random() * 100}%`;
+                
+                // Remove after animation
+                setTimeout(() => {
+                    document.body.removeChild(confetti);
+                }, (duration + delay) * 1000);
+            }
+        }
+        
+        // Shuffle array (Fisher-Yates algorithm)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        // Initialize the game when the page loads
+        window.onload = initGame;
+    </script>
+</body>
+</html>
